@@ -1,31 +1,38 @@
 package com.example.todoapp.components
 
-import android.app.AlertDialog
-import android.widget.Space
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.todoapp.MainViewModel
 
 @Composable
 fun EditDialog(
-    isShowDialog: MutableState<Boolean>,
     viewModel: MainViewModel = hiltViewModel()
 ) {
+    // コンポーザブル(AlertDialog)がUIから削除されるタイミングでonDisposeの中に記載された処理が走る
+    // 引数にはkeyとeffectがあるが、今回はこれが走る際に一回だけセットすればいいから。
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.resetProperties()
+        }
+    }
 
     AlertDialog(
         //画面の外側をタップしたとき
-        onDismissRequest = { isShowDialog.value = false },
+        onDismissRequest = { viewModel.isShowDialog = false },
         title = {
-            Text(text = "タスク新規作成")
+            Text(
+                text =
+                if (viewModel.idEditing) "タスク更新"
+                else "タスク新規作成"
+            )
         },
         text = {
             Column {
@@ -43,7 +50,7 @@ fun EditDialog(
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
                     modifier = Modifier.width(120.dp),
-                    onClick = { isShowDialog.value = false },
+                    onClick = { viewModel.isShowDialog = false },
 
 
                     ) {
@@ -53,8 +60,13 @@ fun EditDialog(
                 Spacer(modifier = Modifier.width(10.dp))
                 Button(modifier = Modifier.width(120.dp),
                     onClick = {
-                        isShowDialog.value = false
-                        viewModel.createTask()
+                        viewModel.isShowDialog = false
+                        if (viewModel.idEditing) {
+                            viewModel.updateTask()
+
+                        } else {
+                            viewModel.createTask()
+                        }
 
                     }) {
                     Text(text = "OK")
